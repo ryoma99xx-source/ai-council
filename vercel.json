@@ -1,7 +1,11 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/app", "destination": "/public/app.html" },
-    { "source": "/", "destination": "/public/login.html" }
+  "version": 2,
+  "routes": [
+    { "src": "/api/login", "dest": "/api/login.js" },
+    { "src": "/api/claude", "dest": "/api/claude.js" },
+    { "src": "/api/gemini", "dest": "/api/gemini.js" },
+    { "src": "/app", "dest": "/public/app.html" },
+    { "src": "/login", "dest": "/public/login.html" },
+    { "src": "/", "dest": "/public/login.html" }
   ]
 }
