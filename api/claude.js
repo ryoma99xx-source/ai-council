@@ -5,11 +5,14 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { system, message } = req.body;
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return res.status(400).json({ error: 'Anthropic APIキーが未設定' });
+
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'x-api-key': key,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
