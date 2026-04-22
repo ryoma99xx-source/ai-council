@@ -2,45 +2,59 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { prompt, apiKey } = req.body;
     const key = apiKey || process.env.GEMINI_API_KEY;
-
     if (!key) return res.status(200).json({ text: 'エラー：APIキーが未設定です。' });
 
-    // 1. エンドポイントを v1 に変更
-    // 2. モデル名をシンプルな gemini-1.5-flash に固定
-    const model = 'gemini-1.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${key}`;
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt || "Hello" }] }]
-        })
+    // 試行するモデルの優先順位リスト（新しい順）
+    // 1.5系が全滅している可能性を考慮して 1.0系も混ぜます
+    const models = [
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+      'gemini-1.0-pro',
+      'gemini-pro'
+    ];
+
+    let lastError = "";
+
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt || "テスト" }] }] })
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.candidates) {
+          return res.status(200).json({ 
+            text: `【成功モデル: ${model}】\n\n${data.candidates[0].content.parts[0].text}` 
+          });
+        } else {
+          lastError = data.error ? `${data.error.status}: ${data.error.message}` : "Unknown error";
+          // 次のモデルを試す
+          continue;
+        }
+      } catch (e) {
+        lastError = e.message;
+        continue;
       }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      // エラーの詳細をそのまま画面に出す
-      const errorMsg = data.error ? `${data.error.status}: ${data.error.message}` : '不明なエラー';
-      return res.status(200).json({ text: `修正版(v1)でもエラー：${errorMsg}` });
     }
 
-    if (data.candidates && data.candidates[0].content) {
-      return res.status(200).json({ text: data.candidates[0].content.parts[0].text });
-    } else {
-      return res.status(200).json({ text: 'エラー：正常な応答が得られませんでした。' });
-    }
+    // 全モデルが失敗した場合、最後に発生したエラーを詳細に返す
+    return res.status(200).json({ 
+      text: `全モデル試行失敗。最新のエラー: ${lastError}\n\nヒント: APIキー作成直後は数時間〜1日程度、最新モデル(1.5)が使えないケースがあります。その場合は gemini-pro が反応するはずです。` 
+    });
 
   } catch (e) {
-    return res.status(200).json({ text: '例外発生：' + e.message });
+    return res.status(200).json({ text: 'システムエラー：' + e.message });
   }
 };
