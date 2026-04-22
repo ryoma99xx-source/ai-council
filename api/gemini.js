@@ -4,8 +4,10 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { prompt } = req.body;
-  const key = process.env.GEMINI_API_KEY;
+  const { prompt, apiKey } = req.body;
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) return res.status(400).json({ error: 'Gemini APIキーが未設定' });
+
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
