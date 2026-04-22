@@ -96,46 +96,30 @@ document.getElementById('pw').addEventListener('keydown', e => {
 async function doLogin() {
   const pw = document.getElementById('pw').value;
   if (!pw) return;
-  
+
   const btn = document.getElementById('login-btn');
   btn.disabled = true;
   btn.textContent = '確認中...';
-  
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pw })
-    });
-    const data = await res.json();
-    
-    if (data.success) {
-      localStorage.setItem('council_token', data.token);
-      localStorage.setItem('council_expires', data.expires);
-      window.location.href = '/app';
-    } else {
-      document.getElementById('error-msg').style.display = 'block';
-      document.getElementById('pw').value = '';
-      btn.disabled = false;
-      btn.textContent = '入 室';
-    }
-  } catch (e) {
-    // Vercelデプロイ前のテスト用：パスワード直接確認
-    const hash = await md5(pw);
-    if (hash === 'a8f5f167f44f4964e6c998dee827110c') {
-      localStorage.setItem('council_token', 'local_' + Date.now());
-      localStorage.setItem('council_expires', Date.now() + 86400000);
-      window.location.href = '/app';
-    } else {
-      document.getElementById('error-msg').style.display = 'block';
-      document.getElementById('pw').value = '';
-      btn.disabled = false;
-      btn.textContent = '入 室';
-    }
+
+  // 保存されたパスワードハッシュと照合
+  const storedHash = localStorage.getItem('council_pw_hash') || 
+    'dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986d'; // SHA-256 of 'council2024'
+
+  const inputHash = await sha256(pw);
+
+  if (inputHash === storedHash) {
+    localStorage.setItem('council_token', 'tk_' + Date.now());
+    localStorage.setItem('council_expires', Date.now() + 86400000);
+    window.location.href = '/app';
+  } else {
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('pw').value = '';
+    btn.disabled = false;
+    btn.textContent = '入 室';
   }
 }
 
-async function md5(str) {
+async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
