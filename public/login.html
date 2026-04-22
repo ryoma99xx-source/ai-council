@@ -103,7 +103,7 @@ async function doLogin() {
 
   // 保存されたパスワードハッシュと照合
   const storedHash = localStorage.getItem('council_pw_hash') || 
-    'dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986d'; // SHA-256 of 'council2024'
+    '2c0b76bf1fd8b424669f809379543f42c16bfecdf88d7a16c967f8d5b6607c0e'; // SHA-256 of 'council2024'
 
   const inputHash = await sha256(pw);
 
