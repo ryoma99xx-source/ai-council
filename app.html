@@ -328,15 +328,13 @@ async function callClaude(system,userMsg){
   return d.text;
 }
 async function callGPT(system,userMsg){
-  const k=getKeys().openai;
-  if(!k)throw new Error('OpenAI APIキーが未設定');
-  const r=await fetch('https://api.openai.com/v1/chat/completions',{
-    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
-    body:JSON.stringify({model:'gpt-4o',max_tokens:1000,messages:[{role:'system',content:system},{role:'user',content:userMsg}]})
+  const r=await fetch('/api/openai',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system,message:userMsg})
   });
   const d=await r.json();
   if(!r.ok)throw new Error('GPT-4o: '+(d.error?.message||r.status));
-  return d.choices[0].message.content;
+  return d.text;
 }
 async function callGemini(prompt){
   const k=getKeys().gemini;
