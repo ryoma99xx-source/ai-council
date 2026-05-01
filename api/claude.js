@@ -4,12 +4,10 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   try {
-    const { system, message } = req.body;
+    const { system, message, max_tokens } = req.body;
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) return res.status(200).json({ text: 'エラー：ANTHROPIC_API_KEYが未設定です' });
-
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -19,7 +17,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5',
-        max_tokens: 1000,
+        max_tokens: max_tokens || 1000,
         system: system || 'あなたは優秀な参謀です。',
         messages: [{ role: 'user', content: message }]
       })
